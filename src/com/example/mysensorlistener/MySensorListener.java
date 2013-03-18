@@ -175,13 +175,6 @@ public class MySensorListener implements SensorEventListener {
 	}
 
 	public MySensorData getSensorData() {
-//		System.out.println("in getSensorData(): ");
-//		//理论上各个buffer大小应该相同，不过华为的测试机gyro有问题
-//		System.out.println(_sensorData._abuf.size());
-//		System.out.println(_sensorData._gbuf.size());
-//		System.out.println(_sensorData._mbuf.size());
-//		System.out.println(_sensorData._rbuf.size());
-		
 		return _sensorData;
 	}
 

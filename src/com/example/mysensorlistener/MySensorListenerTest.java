@@ -79,12 +79,21 @@ public class MySensorListenerTest extends Activity {
 				
 				Object[] arr = aBuf.toArray();
 
-				String res = "arr.length:= " + arr.length + "\n";
-				for (Object obj : arr) {
-					res += ((float[]) obj)[0] + " | " + ((float[]) obj)[1]
-							+ " | " + ((float[]) obj)[2] + " | \n";
-				}
+//				String res = "arr.length:= " + arr.length + "\n";
+//				for (Object obj : arr) {
+//					res += ((float[]) obj)[0] + " | " + ((float[]) obj)[1]
+//							+ " | " + ((float[]) obj)[2] + " | \n";
+//				}
 
+				StringBuilder res = new StringBuilder();
+				res.append("arr.length:= " + arr.length + "\n");
+				for(Object obj:arr){
+//					res.append
+					res.append(((float[]) obj)[0] + " | " + ((float[]) obj)[1]
+					+ " | " + ((float[]) obj)[2] + " | \n");
+
+				}
+				
 				textViewOutput.setText(res);
 				aBuf.clear();
 				gBuf.clear();
