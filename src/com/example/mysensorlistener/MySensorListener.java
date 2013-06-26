@@ -8,6 +8,18 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
 public class MySensorListener implements SensorEventListener {
+	//2013-6-26 23:39:44	试图时间戳对齐，接姜锦正要求
+	private int INVALID=-1;
+	private long _timeStamp=INVALID;
+	private final int _sensorNum=4;
+	private int _sensorCnt=0;
+	
+	private float[] _tmpAcc;
+	private float[] _tmpGyro;
+	private float[] _tmpMag;
+	private float[] _tmpRot;
+	
+	
 	/**
 	 * _aBuffer 是合加速度， _laBuffer 是线加速度
 	 */
@@ -97,6 +109,29 @@ public class MySensorListener implements SensorEventListener {
 		
 		_sensorData._tsBuf=_tsBuffer;
 	}
+	
+	private void offerBuffers(){
+		_sensorCnt=0;
+		_aBuffer.offer(_tmpAcc);
+		_gyroBuffer.offer(_tmpGyro);
+		_mBuffer.offer(_tmpMag);
+		_rotBuffer.offer(_tmpRot);
+		//old timestamp:
+		_tsBuffer.offer(_timeStamp);
+	}
+	private void addValidValues(int eType, float[] values){
+		_sensorCnt++;
+		if (eType == Sensor.TYPE_ACCELEROMETER) {
+			_tmpAcc=values;
+		} else if (eType == Sensor.TYPE_MAGNETIC_FIELD) {
+			_tmpMag=values;
+		} else if (eType == Sensor.TYPE_GYROSCOPE) {
+			_tmpGyro=values;
+		} else if (eType == Sensor.TYPE_ROTATION_VECTOR) {
+			_tmpRot=values;
+		}
+
+	}
 
 	@Override
 	public void onSensorChanged(SensorEvent event) {
@@ -104,26 +139,39 @@ public class MySensorListener implements SensorEventListener {
 
 		int eType = event.sensor.getType();
 		float[] values = event.values.clone();
-
-		if (eType == Sensor.TYPE_ACCELEROMETER) {
-			_aBuffer.offer(values);
-			//加时间戳：
-			 _tsBuffer.offer(System.currentTimeMillis());
-			System.out.println("onSensorChanged values: "+values[0]+","+values[1]+","+values[2]);
-		} else if (eType == Sensor.TYPE_LINEAR_ACCELERATION) {
-			_laBuffer.offer(values);
-		} else if (eType == Sensor.TYPE_GRAVITY) {
-			_gBuffer.offer(values);
-		} else if (eType == Sensor.TYPE_MAGNETIC_FIELD) {
-			_mBuffer.offer(values);
-		} else if (eType == Sensor.TYPE_ORIENTATION) {
-			// do nothing
-		} else if (eType == Sensor.TYPE_GYROSCOPE) {
-			_gyroBuffer.offer(values);
-		} else if (eType == Sensor.TYPE_ROTATION_VECTOR) {
-			_rotBuffer.offer(values);
-//			System.out.println("values.length:= "+values.length);	//==3
+		
+		//伪代码见手机照片
+		long ts=event.timestamp;
+		if(_timeStamp==INVALID)
+			_timeStamp=ts;
+		
+		if(_timeStamp!=ts){
+			if(_sensorCnt==_sensorNum)
+				offerBuffers();
+			_timeStamp=ts;
 		}
+		addValidValues(eType, values);
+		
+
+//		if (eType == Sensor.TYPE_ACCELEROMETER) {
+//			_aBuffer.offer(values);
+//			//加时间戳：
+//			 _tsBuffer.offer(System.currentTimeMillis());
+//			System.out.println("onSensorChanged values: "+values[0]+","+values[1]+","+values[2]);
+//		} else if (eType == Sensor.TYPE_LINEAR_ACCELERATION) {
+//			_laBuffer.offer(values);
+//		} else if (eType == Sensor.TYPE_GRAVITY) {
+//			_gBuffer.offer(values);
+//		} else if (eType == Sensor.TYPE_MAGNETIC_FIELD) {
+//			_mBuffer.offer(values);
+//		} else if (eType == Sensor.TYPE_ORIENTATION) {
+//			// do nothing
+//		} else if (eType == Sensor.TYPE_GYROSCOPE) {
+//			_gyroBuffer.offer(values);
+//		} else if (eType == Sensor.TYPE_ROTATION_VECTOR) {
+//			_rotBuffer.offer(values);
+////			System.out.println("values.length:= "+values.length);	//==3
+//		}
 	}
 
 	@Override
