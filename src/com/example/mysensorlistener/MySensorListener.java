@@ -117,9 +117,10 @@ public class MySensorListener implements SensorEventListener {
 		_mBuffer.offer(_tmpMag);
 		_rotBuffer.offer(_tmpRot);
 		//old timestamp:
-		_tsBuffer.offer(_timeStamp);
+		_tsBuffer.offer(_timeStamp/(1000*1000));
 	}
 	private void addValidValues(int eType, float[] values){
+		System.out.println("addValidValues, _sensorCnt: "+_sensorCnt);
 		_sensorCnt++;
 		if (eType == Sensor.TYPE_ACCELEROMETER) {
 			_tmpAcc=values;
@@ -142,14 +143,24 @@ public class MySensorListener implements SensorEventListener {
 		
 		//伪代码见手机照片
 		long ts=event.timestamp;
-		if(_timeStamp==INVALID)
-			_timeStamp=ts;
+		System.out.println("System.currentTimeMillis(), e.ts: "+System.currentTimeMillis()+", "+event.timestamp);
 		
-		if(_timeStamp!=ts){
-			if(_sensorCnt==_sensorNum)
-				offerBuffers();
+		if(_timeStamp==INVALID){
+			System.out.println("_timeStamp==INVALID");
 			_timeStamp=ts;
 		}
+		
+		if(_timeStamp!=ts){
+			System.out.println("_timeStamp!=ts, "+_timeStamp+", "+ts);
+			if(_sensorCnt>=_sensorNum){
+				System.out.println("_sensorCnt>=_sensorNum");
+				offerBuffers();
+			}
+			_timeStamp=ts;
+		}
+		else
+			System.out.println("_timeStamp==ts, "+ts);
+			
 		addValidValues(eType, values);
 		
 
