@@ -112,12 +112,16 @@ public class MySensorListener implements SensorEventListener {
 	
 	private void offerBuffers(){
 		_sensorCnt=0;
+		Long ts=_timeStamp/(1000*1000);
+		if(ts.equals(_tsBuffer.peekLast()))
+			return;
+		//old timestamp, in millis:
+		_tsBuffer.offer(ts);
+
 		_aBuffer.offer(_tmpAcc);
 		_gyroBuffer.offer(_tmpGyro);
 		_mBuffer.offer(_tmpMag);
 		_rotBuffer.offer(_tmpRot);
-		//old timestamp:
-		_tsBuffer.offer(_timeStamp/(1000*1000));
 	}
 	private void addValidValues(int eType, float[] values){
 		System.out.println("addValidValues, _sensorCnt: "+_sensorCnt);
