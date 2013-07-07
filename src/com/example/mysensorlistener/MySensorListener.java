@@ -111,7 +111,7 @@ public class MySensorListener implements SensorEventListener {
 	}
 	
 	private void offerBuffers(){
-		_sensorCnt=0;
+//		_sensorCnt=0;
 		Long ts=_timeStamp/(1000*1000);
 		if(ts.equals(_tsBuffer.peekLast()))
 			return;
@@ -160,7 +160,10 @@ public class MySensorListener implements SensorEventListener {
 				System.out.println("_sensorCnt>=_sensorNum");
 				offerBuffers();
 			}
+			else
+				System.out.println("_timeStamp!=ts && _sensorCnt<_sensorNum");
 			_timeStamp=ts;
+			_sensorCnt=0;
 		}
 		else
 			System.out.println("_timeStamp==ts, "+ts);
