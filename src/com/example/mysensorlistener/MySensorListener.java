@@ -8,6 +8,10 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
 public class MySensorListener implements SensorEventListener {
+	
+	//用于标记并去除第一帧，因为第一帧数据总是上一次unregister之前的遗留帧，原因不明
+	private boolean _isFirstFrame=true;
+	
 	//2013-6-26 23:39:44	试图时间戳对齐，接姜锦正要求
 	private int INVALID=-1;
 	private long _timeStamp=INVALID;
@@ -111,6 +115,11 @@ public class MySensorListener implements SensorEventListener {
 	}
 	
 	private void offerBuffers(){
+		if (_isFirstFrame) {
+			System.out.println("if(_isFirstFrame)");
+			_isFirstFrame=false;
+			return;
+		}
 //		_sensorCnt=0;
 		Long ts=_timeStamp/(1000*1000);
 		if(ts.equals(_tsBuffer.peekLast()))
@@ -249,6 +258,9 @@ public class MySensorListener implements SensorEventListener {
 	}
 
 	public void clearAllBuf() {
+		_isFirstFrame=true;
+		
+		
 		_aBuffer.clear();
 		_laBuffer.clear();
 		_gBuffer.clear();
