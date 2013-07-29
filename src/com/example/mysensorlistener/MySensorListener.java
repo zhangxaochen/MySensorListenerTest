@@ -115,6 +115,7 @@ public class MySensorListener implements SensorEventListener {
 	}
 	
 	private void offerBuffers(){
+		System.out.println("offerBuffers()");
 		if (_isFirstFrame) {
 			System.out.println("if(_isFirstFrame)");
 			_isFirstFrame=false;
@@ -133,20 +134,37 @@ public class MySensorListener implements SensorEventListener {
 		_rotBuffer.offer(_tmpRot);
 	}
 	private void addValidValues(int eType, float[] values){
-		System.out.println("addValidValues, _sensorCnt: "+_sensorCnt);
 		_sensorCnt++;
-		if (eType == Sensor.TYPE_ACCELEROMETER) {
+//		if (eType == Sensor.TYPE_ACCELEROMETER) {
+//			_tmpAcc=values;
+//		} else if (eType == Sensor.TYPE_MAGNETIC_FIELD) {
+//			_tmpMag=values;
+//		} else if (eType == Sensor.TYPE_GYROSCOPE) {
+//			_tmpGyro=values;
+//		} else if (eType == Sensor.TYPE_ROTATION_VECTOR) {
+//			_tmpRot=values;
+//		}else{
+//			_sensorCnt--;
+//		}
+		switch (eType) {
+		case Sensor.TYPE_ACCELEROMETER:
 			_tmpAcc=values;
-		} else if (eType == Sensor.TYPE_MAGNETIC_FIELD) {
+			break;
+		case Sensor.TYPE_MAGNETIC_FIELD:
 			_tmpMag=values;
-		} else if (eType == Sensor.TYPE_GYROSCOPE) {
+			break;
+		case Sensor.TYPE_GYROSCOPE:
 			_tmpGyro=values;
-		} else if (eType == Sensor.TYPE_ROTATION_VECTOR) {
+			break;
+		case Sensor.TYPE_ROTATION_VECTOR:
 			_tmpRot=values;
-		}else{
+			break;
+		default:
 			_sensorCnt--;
+			break;
 		}
 
+		System.out.println("addValidValues, _sensorCnt: "+_sensorCnt);
 	}
 
 	@Override
@@ -158,12 +176,15 @@ public class MySensorListener implements SensorEventListener {
 		
 		//伪代码见手机照片
 		long ts=event.timestamp;
-		System.out.println("System.currentTimeMillis(), e.ts: "+System.currentTimeMillis()+", "+event.timestamp+", "+eType);
+		System.out.println("System.currentTimeMillis(), e.ts: "+System.currentTimeMillis()+", "+event.timestamp+", "+eType+", "+_timeStamp);
 		
 		if(_timeStamp==INVALID){
 			System.out.println("_timeStamp==INVALID");
 			_timeStamp=ts;
 		}
+		
+		if(ts-_timeStamp<0)
+			System.out.println("=======================");
 		
 		if(_timeStamp!=ts){
 			System.out.println("_timeStamp!=ts, "+_timeStamp+", "+ts+", "+eType);
@@ -245,6 +266,8 @@ public class MySensorListener implements SensorEventListener {
 				rate);
 		sm.registerListener(this,
 				sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), rate);
+		
+		
 	}
 
 	public void unregisterWithSensorManager(SensorManager sm) {
@@ -271,6 +294,11 @@ public class MySensorListener implements SensorEventListener {
 		_rotBuffer.clear();
 		
 		_tsBuffer.clear();
+	}
+	
+	public void reset(){
+		_timeStamp=INVALID;
+		_sensorCnt=0;
 	}
 
 }// MySensorListener
