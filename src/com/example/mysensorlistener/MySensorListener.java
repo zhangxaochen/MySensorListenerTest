@@ -143,6 +143,8 @@ public class MySensorListener implements SensorEventListener {
 			_tmpGyro=values;
 		} else if (eType == Sensor.TYPE_ROTATION_VECTOR) {
 			_tmpRot=values;
+		}else{
+			_sensorCnt--;
 		}
 
 	}
@@ -156,7 +158,7 @@ public class MySensorListener implements SensorEventListener {
 		
 		//伪代码见手机照片
 		long ts=event.timestamp;
-		System.out.println("System.currentTimeMillis(), e.ts: "+System.currentTimeMillis()+", "+event.timestamp);
+		System.out.println("System.currentTimeMillis(), e.ts: "+System.currentTimeMillis()+", "+event.timestamp+", "+eType);
 		
 		if(_timeStamp==INVALID){
 			System.out.println("_timeStamp==INVALID");
@@ -164,7 +166,7 @@ public class MySensorListener implements SensorEventListener {
 		}
 		
 		if(_timeStamp!=ts){
-			System.out.println("_timeStamp!=ts, "+_timeStamp+", "+ts);
+			System.out.println("_timeStamp!=ts, "+_timeStamp+", "+ts+", "+eType);
 			if(_sensorCnt>=_sensorNum){
 				System.out.println("_sensorCnt>=_sensorNum");
 				offerBuffers();
