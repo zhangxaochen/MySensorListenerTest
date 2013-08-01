@@ -6,6 +6,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.provider.SyncStateContract.Constants;
 
 public class MySensorListener implements SensorEventListener {
 	
@@ -18,10 +19,10 @@ public class MySensorListener implements SensorEventListener {
 	private final int _sensorNum=4;
 	private int _sensorCnt=0;
 	
-	private float[] _tmpAcc;
-	private float[] _tmpGyro;
-	private float[] _tmpMag;
-	private float[] _tmpRot;
+//	private float[] _tmpAcc;
+//	private float[] _tmpGyro;
+//	private float[] _tmpMag;
+//	private float[] _tmpRot;
 	
 	
 	/**
@@ -50,123 +51,91 @@ public class MySensorListener implements SensorEventListener {
 	 */
 	private LinkedList<float[]> _rotBuffer = new LinkedList<float[]>();
 	
-	private LinkedList<Long> _tsBuffer=new LinkedList<Long>();
+	private LinkedList<Double> _aTsBuffer=new LinkedList<Double>();
+	private LinkedList<Double> _gTsBuffer=new LinkedList<Double>();
+	private LinkedList<Double> _mTsBuffer=new LinkedList<Double>();
+	private LinkedList<Double> _rTsBuffer=new LinkedList<Double>();
+	
+//	private LinkedList<Long> _tsBuffer=new LinkedList<Long>();
+	
+	//epoch time in UTC, in millis, 记得要转成秒
+	private double _baseTimestamp=0;
+	private long _beginTimeInNano=0;
 
 	public class MySensorData {
-		/**
-		 * _abuf 是合加速度
-		 */
-		LinkedList<float[]> _abuf;
-		/**
-		 * it's gyroscope, not gravity
-		 */
-		LinkedList<float[]> _gbuf;
-		/**
-		 * magnetic field
-		 */
-		LinkedList<float[]> _mbuf;
-		/**
-		 * it's rotation vector, not rotation
-		 */
-		LinkedList<float[]> _rbuf;
+//		/**
+//		 * _abuf 是合加速度
+//		 */
+//		LinkedList<float[]> _abuf;
+//		/**
+//		 * it's gyroscope, not gravity
+//		 */
+//		LinkedList<float[]> _gbuf;
+//		/**
+//		 * magnetic field
+//		 */
+//		LinkedList<float[]> _mbuf;
+//		/**
+//		 * it's rotation vector, not rotation
+//		 */
+//		LinkedList<float[]> _rbuf;
+//		
+//		LinkedList<Float> _aTsBuf;
+//		LinkedList<Float> _gTsBuf;
+//		LinkedList<Float> _mTsBuf;
+//		LinkedList<Float> _rTsBuf;
 		
-		/**
-		 * timeStamp
-		 */
-		LinkedList<Long> _tsBuf;
-
+		
 		public MySensorData() {
 		}
 
 		public LinkedList<float[]> getAbuf() {
-			return _abuf;
+//			return _abuf;
+			return _aBuffer;
 		}
 
 		public LinkedList<float[]> getGbuf() {
-			return _gbuf;
+//			return _gbuf;
+			return _gyroBuffer;
 		}
 
 		public LinkedList<float[]> getMbuf() {
-			return _mbuf;
+//			return _mbuf;
+			return _mBuffer;
 		}
 
 		public LinkedList<float[]> getRbuf() {
-			return _rbuf;
+//			return _rbuf;
+			return _rotBuffer;
 		}
-		public LinkedList<Long> getTbuf(){
-			return _tsBuf;
-		}
-
-		public void clearAllBuf() {
-			MySensorListener.this.clearAllBuf();
+		
+		public LinkedList<Double> getATsBuf(){
+			return _aTsBuffer;
 		}
 
-	}
+		public LinkedList<Double> getGTsBuf(){
+			return _gTsBuffer;
+		}
+
+		public LinkedList<Double> getMTsBuf(){
+			return _mTsBuffer;
+		}
+		
+		public LinkedList<Double> getRTsBuf(){
+			return _rTsBuffer;
+		}
+		
+//		public void clearAllBuf() {
+//			MySensorListener.this.clearAllBuf();
+//		}
+
+	}//MySensorData
 
 	private MySensorData _sensorData = new MySensorData();
 
 	public MySensorListener() {
-		_sensorData._abuf = _aBuffer;
-		_sensorData._gbuf = _gyroBuffer;
-		_sensorData._mbuf = _mBuffer;
-		_sensorData._rbuf = _rotBuffer;
-		
-		_sensorData._tsBuf=_tsBuffer;
 	}
 	
-	private void offerBuffers(){
-		System.out.println("offerBuffers()");
-		if (_isFirstFrame) {
-			System.out.println("if(_isFirstFrame)");
-			_isFirstFrame=false;
-			return;
-		}
-//		_sensorCnt=0;
-		Long ts=_timeStamp/(1000*1000);
-		if(ts.equals(_tsBuffer.peekLast()))
-			return;
-		//old timestamp, in millis:
-		_tsBuffer.offer(ts);
-
-		_aBuffer.offer(_tmpAcc);
-		_gyroBuffer.offer(_tmpGyro);
-		_mBuffer.offer(_tmpMag);
-		_rotBuffer.offer(_tmpRot);
-	}
-	private void addValidValues(int eType, float[] values){
-		_sensorCnt++;
-//		if (eType == Sensor.TYPE_ACCELEROMETER) {
-//			_tmpAcc=values;
-//		} else if (eType == Sensor.TYPE_MAGNETIC_FIELD) {
-//			_tmpMag=values;
-//		} else if (eType == Sensor.TYPE_GYROSCOPE) {
-//			_tmpGyro=values;
-//		} else if (eType == Sensor.TYPE_ROTATION_VECTOR) {
-//			_tmpRot=values;
-//		}else{
-//			_sensorCnt--;
-//		}
-		switch (eType) {
-		case Sensor.TYPE_ACCELEROMETER:
-			_tmpAcc=values;
-			break;
-		case Sensor.TYPE_MAGNETIC_FIELD:
-			_tmpMag=values;
-			break;
-		case Sensor.TYPE_GYROSCOPE:
-			_tmpGyro=values;
-			break;
-		case Sensor.TYPE_ROTATION_VECTOR:
-			_tmpRot=values;
-			break;
-		default:
-			_sensorCnt--;
-			break;
-		}
-
-		System.out.println("addValidValues, _sensorCnt: "+_sensorCnt);
-	}
-
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 //		 System.out.println("onSensorChanged");
@@ -178,50 +147,63 @@ public class MySensorListener implements SensorEventListener {
 		long ts=event.timestamp;
 		System.out.println("System.currentTimeMillis(), e.ts: "+System.currentTimeMillis()+", "+event.timestamp+", "+eType+", "+_timeStamp);
 		
-		if(_timeStamp==INVALID){
-			System.out.println("_timeStamp==INVALID");
-			_timeStamp=ts;
-		}
-		
-		if(ts-_timeStamp<0)
-			System.out.println("=======================");
-		
-		if(_timeStamp!=ts){
-			System.out.println("_timeStamp!=ts, "+_timeStamp+", "+ts+", "+eType);
-			if(_sensorCnt>=_sensorNum){
-				System.out.println("_sensorCnt>=_sensorNum");
-				offerBuffers();
-			}
-			else
-				System.out.println("_timeStamp!=ts && _sensorCnt<_sensorNum");
-			_timeStamp=ts;
-			_sensorCnt=0;
-		}
-		else
-			System.out.println("_timeStamp==ts, "+ts);
+		if(_isFirstFrame){
+			_isFirstFrame=false;
 			
-		addValidValues(eType, values);
+			_beginTimeInNano=ts;
+		}
+		double epochTime=_baseTimestamp*Consts.MS2S+(ts-_beginTimeInNano)*Consts.NS2S;
+		System.out.println("epochTime: "+epochTime);
+		
+		
+		
+//		if(_timeStamp==INVALID){
+//			System.out.println("_timeStamp==INVALID");
+//			_timeStamp=ts;
+//		}
+//		
+//		if(ts-_timeStamp<0)
+//			System.out.println("=======================");
+//		
+//		if(_timeStamp!=ts){
+//			System.out.println("_timeStamp!=ts, "+_timeStamp+", "+ts+", "+eType);
+//			if(_sensorCnt>=_sensorNum){
+//				System.out.println("_sensorCnt>=_sensorNum");
+//				offerBuffers();
+//			}
+//			else
+//				System.out.println("_timeStamp!=ts && _sensorCnt<_sensorNum");
+//			_timeStamp=ts;
+//			_sensorCnt=0;
+//		}
+//		else
+//			System.out.println("_timeStamp==ts, "+ts);
+//			
+//		addValidValues(eType, values);
 		
 
-//		if (eType == Sensor.TYPE_ACCELEROMETER) {
-//			_aBuffer.offer(values);
-//			//加时间戳：
-//			 _tsBuffer.offer(System.currentTimeMillis());
-//			System.out.println("onSensorChanged values: "+values[0]+","+values[1]+","+values[2]);
-//		} else if (eType == Sensor.TYPE_LINEAR_ACCELERATION) {
-//			_laBuffer.offer(values);
-//		} else if (eType == Sensor.TYPE_GRAVITY) {
-//			_gBuffer.offer(values);
-//		} else if (eType == Sensor.TYPE_MAGNETIC_FIELD) {
-//			_mBuffer.offer(values);
-//		} else if (eType == Sensor.TYPE_ORIENTATION) {
-//			// do nothing
-//		} else if (eType == Sensor.TYPE_GYROSCOPE) {
-//			_gyroBuffer.offer(values);
-//		} else if (eType == Sensor.TYPE_ROTATION_VECTOR) {
-//			_rotBuffer.offer(values);
-////			System.out.println("values.length:= "+values.length);	//==3
-//		}
+		if (eType == Sensor.TYPE_ACCELEROMETER) {
+			_aBuffer.offer(values);
+			_aTsBuffer.offer(epochTime);
+			System.out.println("onSensorChanged values: "+values[0]+","+values[1]+","+values[2]);
+		} else if (eType == Sensor.TYPE_LINEAR_ACCELERATION) {
+			_laBuffer.offer(values);
+		} else if (eType == Sensor.TYPE_GRAVITY) {
+			_gBuffer.offer(values);
+			_gTsBuffer.offer(epochTime);
+		} else if (eType == Sensor.TYPE_MAGNETIC_FIELD) {
+			_mBuffer.offer(values);
+			_mTsBuffer.offer(epochTime);
+		} else if (eType == Sensor.TYPE_ORIENTATION) {
+			// do nothing
+		} else if (eType == Sensor.TYPE_GYROSCOPE) {
+			_gyroBuffer.offer(values);
+			_gTsBuffer.offer(epochTime);
+		} else if (eType == Sensor.TYPE_ROTATION_VECTOR) {
+			_rotBuffer.offer(values);
+			_rTsBuffer.offer(epochTime);
+//			System.out.println("values.length:= "+values.length);	//==3
+		}
 	}
 
 	@Override
@@ -254,20 +236,20 @@ public class MySensorListener implements SensorEventListener {
 	}
 
 	public void registerWithSensorManager(SensorManager sm, int rate) {
-		sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_GRAVITY),
-				rate);
+		_baseTimestamp=System.currentTimeMillis();
+		
+//		sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_GRAVITY),
+//				rate);
 		sm.registerListener(this,
 				sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), rate);
-		sm.registerListener(this,
-				sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), rate);
+//		sm.registerListener(this,
+//				sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), rate);
 		sm.registerListener(this,
 				sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), rate);
 		sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
 				rate);
 		sm.registerListener(this,
 				sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), rate);
-		
-		
 	}
 
 	public void unregisterWithSensorManager(SensorManager sm) {
@@ -293,12 +275,22 @@ public class MySensorListener implements SensorEventListener {
 		_gyroBuffer.clear();
 		_rotBuffer.clear();
 		
-		_tsBuffer.clear();
+//		_tsBuffer.clear();
+		
+		_aTsBuffer.clear();
+		_gTsBuffer.clear();
+		_mTsBuffer.clear();
+		_rTsBuffer.clear();
 	}
 	
 	public void reset(){
 		_timeStamp=INVALID;
 		_sensorCnt=0;
+		
+		_baseTimestamp=0;
+		_beginTimeInNano=0;
+		
+		clearAllBuf();
 	}
 
 }// MySensorListener
