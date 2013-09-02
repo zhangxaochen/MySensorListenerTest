@@ -13,6 +13,13 @@ public class MySensorListener implements SensorEventListener {
 	//用于标记并去除第一帧，因为第一帧数据总是上一次unregister之前的遗留帧，原因不明
 	private boolean _isFirstFrame=true;
 	
+	//去除各元件第一帧。 即便与第二帧时间差 <1s, 如 0.2s， 但因后面为 0.02s， 十倍时间差在插值时造成龙格现象
+	private boolean _aIsFirstFrame=true;
+	private boolean _gIsFirstFrame=true;
+	private boolean _mIsFirstFrame=true;
+	private boolean _rIsFirstFrame=true;
+	
+	
 	//2013-6-26 23:39:44	试图时间戳对齐，接姜锦正要求
 	private int INVALID=-1;
 	private long _timeStamp=INVALID;
@@ -183,23 +190,39 @@ public class MySensorListener implements SensorEventListener {
 		
 
 		if (eType == Sensor.TYPE_ACCELEROMETER) {
+			if(_aIsFirstFrame){
+				_aIsFirstFrame=false;
+				return;
+			}
 			_aBuffer.offer(values);
 			_aTsBuffer.offer(epochTime);
 			System.out.println("onSensorChanged values: "+values[0]+","+values[1]+","+values[2]);
-		} else if (eType == Sensor.TYPE_LINEAR_ACCELERATION) {
-			_laBuffer.offer(values);
-		} else if (eType == Sensor.TYPE_GRAVITY) {
-			_gBuffer.offer(values);
-			_gTsBuffer.offer(epochTime);
+//		} else if (eType == Sensor.TYPE_LINEAR_ACCELERATION) {
+//			_laBuffer.offer(values);
+//		} else if (eType == Sensor.TYPE_GRAVITY) {
+//			_gBuffer.offer(values);
+////			_gTsBuffer.offer(epochTime);
 		} else if (eType == Sensor.TYPE_MAGNETIC_FIELD) {
+			if(_mIsFirstFrame){
+				_mIsFirstFrame=false;
+				return;
+			}
 			_mBuffer.offer(values);
 			_mTsBuffer.offer(epochTime);
 		} else if (eType == Sensor.TYPE_ORIENTATION) {
 			// do nothing
 		} else if (eType == Sensor.TYPE_GYROSCOPE) {
+			if(_gIsFirstFrame){
+				_gIsFirstFrame=false;
+				return;
+			}
 			_gyroBuffer.offer(values);
 			_gTsBuffer.offer(epochTime);
 		} else if (eType == Sensor.TYPE_ROTATION_VECTOR) {
+			if(_rIsFirstFrame){
+				_rIsFirstFrame=false;
+				return;
+			}
 			_rotBuffer.offer(values);
 			_rTsBuffer.offer(epochTime);
 //			System.out.println("values.length:= "+values.length);	//==3
@@ -267,7 +290,11 @@ public class MySensorListener implements SensorEventListener {
 	public void clearAllBuf() {
 		_isFirstFrame=true;
 		
-		
+		_aIsFirstFrame=true;
+		_gIsFirstFrame=true;
+		_mIsFirstFrame=true;
+		_rIsFirstFrame=true;
+
 		_aBuffer.clear();
 		_laBuffer.clear();
 		_gBuffer.clear();
