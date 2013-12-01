@@ -6,7 +6,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.provider.SyncStateContract.Constants;
 
 public class MySensorListener implements SensorEventListener {
 	
@@ -18,6 +17,7 @@ public class MySensorListener implements SensorEventListener {
 	private boolean _gIsFirstFrame=true;
 	private boolean _mIsFirstFrame=true;
 	private boolean _rIsFirstFrame=true;
+	private boolean _laIsFirstFrame=true;
 	
 	
 	//2013-6-26 23:39:44	试图时间戳对齐，接姜锦正要求
@@ -30,7 +30,8 @@ public class MySensorListener implements SensorEventListener {
 //	private float[] _tmpGyro;
 //	private float[] _tmpMag;
 //	private float[] _tmpRot;
-	
+
+	float[] _lastRotVec;
 	
 	/**
 	 * _aBuffer 是合加速度， _laBuffer 是线加速度
@@ -58,10 +59,21 @@ public class MySensorListener implements SensorEventListener {
 	 */
 	private LinkedList<float[]> _rotBuffer = new LinkedList<float[]>();
 	
+	/**
+	 * linear acc in world frame, get from la&&rot
+	 */
+	private LinkedList<float[]> _laWfBuffer=new LinkedList<float[]>();
+	
+	
+	
 	private LinkedList<Double> _aTsBuffer=new LinkedList<Double>();
 	private LinkedList<Double> _gTsBuffer=new LinkedList<Double>();
 	private LinkedList<Double> _mTsBuffer=new LinkedList<Double>();
 	private LinkedList<Double> _rTsBuffer=new LinkedList<Double>();
+	private LinkedList<Double> _laTsBuffer=new LinkedList<Double>();
+	
+	//别名而已
+	private LinkedList<Double> _laWfTsBuffer=_laTsBuffer;
 	
 //	private LinkedList<Long> _tsBuffer=new LinkedList<Long>();
 	
@@ -70,28 +82,6 @@ public class MySensorListener implements SensorEventListener {
 	private long _beginTimeInNano=0;
 
 	public class MySensorData {
-//		/**
-//		 * _abuf 是合加速度
-//		 */
-//		LinkedList<float[]> _abuf;
-//		/**
-//		 * it's gyroscope, not gravity
-//		 */
-//		LinkedList<float[]> _gbuf;
-//		/**
-//		 * magnetic field
-//		 */
-//		LinkedList<float[]> _mbuf;
-//		/**
-//		 * it's rotation vector, not rotation
-//		 */
-//		LinkedList<float[]> _rbuf;
-//		
-//		LinkedList<Float> _aTsBuf;
-//		LinkedList<Float> _gTsBuf;
-//		LinkedList<Float> _mTsBuf;
-//		LinkedList<Float> _rTsBuf;
-		
 		
 		public MySensorData() {
 		}
@@ -197,8 +187,26 @@ public class MySensorListener implements SensorEventListener {
 			_aBuffer.offer(values);
 			_aTsBuffer.offer(epochTime);
 			System.out.println("onSensorChanged values: "+values[0]+","+values[1]+","+values[2]);
-//		} else if (eType == Sensor.TYPE_LINEAR_ACCELERATION) {
-//			_laBuffer.offer(values);
+		} else if (eType == Sensor.TYPE_LINEAR_ACCELERATION) {
+			if(_laIsFirstFrame){
+				_laIsFirstFrame=false;
+				return;
+			}
+			_laBuffer.offer(values);
+			_laTsBuffer.offer(epochTime);
+			
+			//全局坐标的 linear acc 也存下来看看
+			float[] rotMat=new float[9];
+			SensorManager.getRotationMatrixFromVector(rotMat, _lastRotVec);
+
+			float[] res = new float[3];
+			for (int i = 0; i < 3; i++) {
+				int idx = 3 * i;
+				res[i] = rotMat[idx] * values[0] + rotMat[idx + 1] * values[1]
+						+ rotMat[idx + 2] * values[2];
+			}
+			
+			
 //		} else if (eType == Sensor.TYPE_GRAVITY) {
 //			_gBuffer.offer(values);
 ////			_gTsBuffer.offer(epochTime);
@@ -226,6 +234,8 @@ public class MySensorListener implements SensorEventListener {
 			_rotBuffer.offer(values);
 			_rTsBuffer.offer(epochTime);
 //			System.out.println("values.length:= "+values.length);	//==3
+			
+			_lastRotVec=values;
 		}
 	}
 
