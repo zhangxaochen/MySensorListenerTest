@@ -25,6 +25,7 @@ public class MySensorListener implements SensorEventListener {
 	private long _timeStamp=INVALID;
 	private final int _sensorNum=4;
 	private int _sensorCnt=0;
+	private int _maxBufSize=200000;
 	
 //	private float[] _tmpAcc;
 //	private float[] _tmpGyro;
@@ -44,7 +45,7 @@ public class MySensorListener implements SensorEventListener {
 	/**
 	 * gravity
 	 */
-	private LinkedList<float[]> _gBuffer = new LinkedList<float[]>();
+	private LinkedList<float[]> _gravBuffer = new LinkedList<float[]>();
 	/**
 	 * megnetic field
 	 */
@@ -133,10 +134,22 @@ public class MySensorListener implements SensorEventListener {
 	public MySensorListener() {
 	}
 	
+	boolean someBufFull(){
+		int curMax=Math.max(_aBuffer.size(), _gyroBuffer.size());
+		curMax=Math.max(curMax, _mBuffer.size());
+		curMax=Math.max(curMax, _rotBuffer.size());
+		if(curMax>_maxBufSize)
+			return true;
+		return false;
+	}//someBufFull
+	
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 //		 System.out.println("onSensorChanged");
-
+		
+		if(someBufFull())
+			clearAllBuf();
+		
 		int eType = event.sensor.getType();
 		float[] values = event.values.clone();
 		
@@ -233,7 +246,7 @@ public class MySensorListener implements SensorEventListener {
 			}
 			_rotBuffer.offer(values);
 			_rTsBuffer.offer(epochTime);
-//			System.out.println("values.length:= "+values.length);	//==3
+			System.out.println("values.length:= "+values.length+", "+values[0]+", "+values[01]+", "+values[02]);	//==3
 			
 			_lastRotVec=values;
 		}
@@ -249,7 +262,7 @@ public class MySensorListener implements SensorEventListener {
 	}
 
 	public LinkedList<float[]> getGravityDataBuf() {
-		return _gBuffer;
+		return _gravBuffer;
 	}
 
 	public LinkedList<float[]> getLinearAccDataBuf() {
@@ -298,16 +311,16 @@ public class MySensorListener implements SensorEventListener {
 	}
 
 	public void clearAllBuf() {
-		_isFirstFrame=true;
-		
-		_aIsFirstFrame=true;
-		_gIsFirstFrame=true;
-		_mIsFirstFrame=true;
-		_rIsFirstFrame=true;
+//		_isFirstFrame=true;
+//		
+//		_aIsFirstFrame=true;
+//		_gIsFirstFrame=true;
+//		_mIsFirstFrame=true;
+//		_rIsFirstFrame=true;
 
 		_aBuffer.clear();
 		_laBuffer.clear();
-		_gBuffer.clear();
+		_gravBuffer.clear();
 		_mBuffer.clear();
 		_gyroBuffer.clear();
 		_rotBuffer.clear();
@@ -327,6 +340,12 @@ public class MySensorListener implements SensorEventListener {
 		_baseTimestamp=0;
 		_beginTimeInNano=0;
 		
+		_isFirstFrame=true;
+		
+		_aIsFirstFrame=true;
+		_gIsFirstFrame=true;
+		_mIsFirstFrame=true;
+		_rIsFirstFrame=true;
 		clearAllBuf();
 	}
 
