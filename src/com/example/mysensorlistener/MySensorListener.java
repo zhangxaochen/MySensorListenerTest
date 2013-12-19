@@ -298,6 +298,14 @@ public class MySensorListener implements SensorEventListener {
 				sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), rate);
 	}
 
+	public double get_baseTimestamp() {
+		return _baseTimestamp;
+	}
+
+	public void set_baseTimestamp(double baseTimestamp) {
+		this._baseTimestamp = baseTimestamp;
+	}
+
 	public void unregisterWithSensorManager(SensorManager sm) {
 		sm.unregisterListener(this);
 	}
