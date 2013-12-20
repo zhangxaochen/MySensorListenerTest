@@ -304,6 +304,7 @@ public class MySensorListener implements SensorEventListener {
 
 	public void set_baseTimestamp(double baseTimestamp) {
 		this._baseTimestamp = baseTimestamp;
+		this._isFirstFrame=true;
 	}
 
 	public void unregisterWithSensorManager(SensorManager sm) {
