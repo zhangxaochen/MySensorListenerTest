@@ -8,6 +8,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
 public class MySensorListener implements SensorEventListener {
+	public boolean _allowStoreData = false;
 	
 	//用于标记并去除第一帧，因为第一帧数据总是上一次unregister之前的遗留帧，原因不明
 	private boolean _isFirstFrame=true;
@@ -145,6 +146,9 @@ public class MySensorListener implements SensorEventListener {
 	
 	@Override
 	public void onSensorChanged(SensorEvent event) {
+		if(!_allowStoreData)
+			return;
+		
 //		 System.out.println("onSensorChanged");
 		
 		if(someBufFull())
@@ -155,7 +159,7 @@ public class MySensorListener implements SensorEventListener {
 		
 		//伪代码见手机照片
 		long ts=event.timestamp;
-		System.out.println("System.currentTimeMillis(), e.ts: "+System.currentTimeMillis()+", "+event.timestamp+", "+eType+", "+_timeStamp);
+		System.out.println("System.currentTimeMillis(), e.ts: "+_allowStoreData+System.currentTimeMillis()+", "+event.timestamp+", "+eType+", "+_timeStamp);
 		
 		if(_isFirstFrame){
 			_isFirstFrame=false;
@@ -350,6 +354,7 @@ public class MySensorListener implements SensorEventListener {
 		_beginTimeInNano=0;
 		
 		_isFirstFrame=true;
+		_allowStoreData=false;
 		
 		_aIsFirstFrame=true;
 		_gIsFirstFrame=true;
