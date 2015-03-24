@@ -8,6 +8,8 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
 public class MySensorListener implements SensorEventListener {
+	//2015年3月24日23:43:27 重新维护 HuaweiProj 时：
+	//不记得为什么用这玩意，似乎在 OpenCameraZC 用到，但是好像后来弃用了
 	public boolean _allowStoreData = false;
 	
 	//用于标记并去除第一帧，因为第一帧数据总是上一次unregister之前的遗留帧，原因不明
@@ -146,10 +148,11 @@ public class MySensorListener implements SensorEventListener {
 	
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		if(!_allowStoreData)
-			return;
+		//2015年3月24日23:47:42 维护 HuaweiProj 时， 丢弃：
+//		if(!_allowStoreData)
+//			return;
 		
-//		 System.out.println("onSensorChanged");
+		 System.out.println("onSensorChanged");
 		
 		if(someBufFull())
 			clearAllBuf();
@@ -285,21 +288,21 @@ public class MySensorListener implements SensorEventListener {
 		return _rotBuffer;
 	}
 
-	public void registerWithSensorManager(SensorManager sm, int rate) {
+	public boolean registerWithSensorManager(SensorManager sm, int rate) {
 		_baseTimestamp=System.currentTimeMillis();
 		
 //		sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_GRAVITY),
 //				rate);
-		sm.registerListener(this,
-				sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), rate);
 //		sm.registerListener(this,
-//				sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), rate);
-		sm.registerListener(this,
-				sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), rate);
-		sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
-				rate);
-		sm.registerListener(this,
-				sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), rate);
+//		sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), rate);
+
+		if (!(
+				sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), rate) && 
+				sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), rate) && 
+				sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE), rate) && 
+				sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), rate)))
+			return false;
+		return true;
 	}
 
 	public double get_baseTimestamp() {

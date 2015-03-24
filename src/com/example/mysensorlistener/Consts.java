@@ -12,7 +12,8 @@ public class Consts {
 	public static final double NS2S = 1.0f / 1000000000.0f;
 	public static final double MS2S = 1.0f / 1000.0f;
 	
-	public static int aMillion=1000000;
+//	public static int aMillion=1000000;
+	public static int aMillion=1000 * 1000;
 	
 	public Consts() {
 	}
