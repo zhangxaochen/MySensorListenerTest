@@ -2,10 +2,15 @@ package com.example.mysensorlistener;
 
 import java.util.LinkedList;
 
+import android.R.integer;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.telephony.PhoneStateListener;
+import android.telephony.SignalStrength;
+import android.telephony.TelephonyManager;
+import android.telephony.gsm.GsmCellLocation;
 
 public class MySensorListener implements SensorEventListener {
 	//2015年3月24日23:43:27 重新维护 HuaweiProj 时：
@@ -22,6 +27,10 @@ public class MySensorListener implements SensorEventListener {
 	private boolean _rIsFirstFrame=true;
 	private boolean _laIsFirstFrame=true;
 	
+	//2015-4-8 09:50:35
+	TelephonyManager _tManager;
+	private int _signalStrength = 0;
+	private int _cellId = -1;
 	
 	//2013-6-26 23:39:44	试图时间戳对齐，接姜锦正要求
 	private int INVALID=-1;
@@ -68,6 +77,12 @@ public class MySensorListener implements SensorEventListener {
 	 */
 	private LinkedList<float[]> _laWfBuffer=new LinkedList<float[]>();
 	
+	/**
+	 * 2015-4-8 09:44:49， 添加信号强度项，@赵威麟
+	 * 目前只用到 _signalStrength[0]==cellID, [1]==strength;
+	 * 其时间轴暂用 _aTsBuffer;
+	 */
+	private LinkedList<float[]> _signalStrengthBuffer=new LinkedList<float[]>();
 	
 	
 	private LinkedList<Double> _aTsBuffer=new LinkedList<Double>();
@@ -110,6 +125,11 @@ public class MySensorListener implements SensorEventListener {
 			return _rotBuffer;
 		}
 		
+//		2015-4-8 09:49:47
+		public LinkedList<float[]> getBSSSbuf() {
+			return _signalStrengthBuffer;
+		}
+		
 		public LinkedList<Double> getATsBuf(){
 			return _aTsBuffer;
 		}
@@ -135,7 +155,46 @@ public class MySensorListener implements SensorEventListener {
 	private MySensorData _sensorData = new MySensorData();
 
 	public MySensorListener() {
-	}
+//		//2015-4-8 10:31:49， 监听 gsm 信号放在全局， 不在 un/register 里
+//		PhoneStateListener psListener = new PhoneStateListener(){
+//			@Override
+//			public void onSignalStrengthsChanged(SignalStrength signalStrength) {
+//				// TODO Auto-generated method stub
+//				super.onSignalStrengthsChanged(signalStrength);
+//				if(signalStrength.isGsm()){
+//					_signalStrength = signalStrength.getGsmSignalStrength();
+//				}
+//			}
+//		};
+		
+	}//default ctor
+	
+	//2015-4-8 10:49:47
+	public void setTelephonyManager(TelephonyManager tManager){
+		_tManager = tManager;
+		
+		//监听 gsm 信号放在全局， 不在 un/register 里
+		PhoneStateListener psListener = new PhoneStateListener(){
+			@Override
+			public void onSignalStrengthsChanged(SignalStrength signalStrength) {
+				// TODO Auto-generated method stub
+				super.onSignalStrengthsChanged(signalStrength);
+				System.out.println("onSignalStrengthsChanged, signalStrength: "+signalStrength);
+				
+				if(signalStrength.isGsm()){
+					_signalStrength = signalStrength.getGsmSignalStrength();
+				}
+				
+				//放在 onSensorChanged 里会卡 UI， 所以放在这里， 
+				//一般 onSignalStrengthsChanged 总会先进来几次， 不必担心完全从未 changed
+				GsmCellLocation location = (GsmCellLocation) _tManager.getCellLocation();
+				_cellId = location.getCid();
+				
+			}
+		};
+		
+		_tManager.listen(psListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+	}//setTelephonyManager
 	
 	boolean someBufFull(){
 		int curMax=Math.max(_aBuffer.size(), _gyroBuffer.size());
@@ -206,7 +265,16 @@ public class MySensorListener implements SensorEventListener {
 			}
 			_aBuffer.offer(values);
 			_aTsBuffer.offer(epochTime);
-			System.out.println("onSensorChanged values: "+values[0]+","+values[1]+","+values[2]);
+			
+			//2015-4-8 10:01:02
+			//_tManager.getCellLocation() 放在这里会卡UI， 不知道为什么。
+//			GsmCellLocation location = (GsmCellLocation) _tManager.getCellLocation();
+//			_cellId = location.getCid();
+			if (_cellId != -1) {
+				float[] ssbuf = { _cellId, _signalStrength, 0 };
+				_signalStrengthBuffer.offer(ssbuf);
+			}
+			System.out.println("onSensorChanged TYPE_ACCELEROMETER: "+values[0]+","+values[1]+","+values[2]+"; cid & BSSS: "+_cellId+","+_signalStrength);
 		} else if (eType == Sensor.TYPE_LINEAR_ACCELERATION) {
 			if(_laIsFirstFrame){
 				_laIsFirstFrame=false;
@@ -341,12 +409,16 @@ public class MySensorListener implements SensorEventListener {
 		_gyroBuffer.clear();
 		_rotBuffer.clear();
 		
+		//2015-4-8 10:30:15
+		_signalStrengthBuffer.clear();
+
 //		_tsBuffer.clear();
 		
 		_aTsBuffer.clear();
 		_gTsBuffer.clear();
 		_mTsBuffer.clear();
 		_rTsBuffer.clear();
+		
 	}
 	
 	public void reset(){
@@ -363,6 +435,12 @@ public class MySensorListener implements SensorEventListener {
 		_gIsFirstFrame=true;
 		_mIsFirstFrame=true;
 		_rIsFirstFrame=true;
+		
+		//2015-4-8 10:29:44
+		//IMU采样过程中 onSignalStrengthsChanged 无法正常工作，所以这里不能重置 _cellId & _signalStrength
+//		_cellId = -1;
+//		_signalStrength = 0;
+		
 		clearAllBuf();
 	}
 
