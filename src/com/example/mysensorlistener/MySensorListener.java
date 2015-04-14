@@ -14,7 +14,7 @@ import android.telephony.gsm.GsmCellLocation;
 
 public class MySensorListener implements SensorEventListener {
 	//2015年3月24日23:43:27 重新维护 HuaweiProj 时：
-	//不记得为什么用这玩意，似乎在 OpenCameraZC 用到，但是好像后来弃用了
+	//OpenCameraZC 用到，因为程序一启动就需要 IMU 来显示方位角、下倾角，但是存到 xml 文件要按按钮之后，所以有此FLAG
 	public boolean _allowStoreData = false;
 	
 	//用于标记并去除第一帧，因为第一帧数据总是上一次unregister之前的遗留帧，原因不明
@@ -207,9 +207,9 @@ public class MySensorListener implements SensorEventListener {
 	
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		//2015年3月24日23:47:42 维护 HuaweiProj 时， 丢弃：
-//		if(!_allowStoreData)
-//			return;
+		//OpenCameraZC.Preview.startCaptureSensor中这么用： _mainActivity._listener._allowStoreData = true;
+		if(!_allowStoreData)
+			return;
 		
 		 System.out.println("onSensorChanged");
 		
